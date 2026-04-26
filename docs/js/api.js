@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+// TODO: After deploying backend to Render, replace this URL with your actual Render URL
+const API_BASE = 'https://YOUR-RENDER-APP.onrender.com/api';
 
 function getToken() {
   return localStorage.getItem('mycare_token');
@@ -15,7 +16,7 @@ async function apiFetch(path, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem('mycare_token');
     localStorage.removeItem('mycare_user');
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
     return;
   }
 
@@ -50,13 +51,13 @@ function getCurrentUser() {
 
 function requireAuth() {
   if (!isLoggedIn()) {
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
   }
 }
 
 function redirectIfLoggedIn() {
   if (isLoggedIn()) {
-    window.location.href = '/dashboard.html';
+    window.location.href = 'dashboard.html';
   }
 }
 

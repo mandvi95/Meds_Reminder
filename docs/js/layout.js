@@ -21,14 +21,14 @@ function buildLayout(activeNav, pageTitle, pageSubtitle = '') {
   const sidebarHtml = `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <img src="/assets/Logo_Small.jpg" alt="MyCare" style="height:40px;border-radius:8px;">
+        <img src="assets/Logo_Small.jpg" alt="MyCare" style="height:40px;border-radius:8px;">
       </div>
       <nav class="sidebar-nav">
         <div class="nav-label">Main Menu</div>
         ${navHtml}
       </nav>
       <div class="sidebar-footer">
-        <div class="user-card" onclick="window.location.href='/profile.html'">
+        <div class="user-card" onclick="window.location.href='profile.html'">
           <div class="user-avatar">${initials(user?.name || 'U')}</div>
           <div class="user-info">
             <div class="name">${user?.name || 'User'}</div>
@@ -84,7 +84,7 @@ function closeSidebar() {
 function logout() {
   localStorage.removeItem('mycare_token');
   localStorage.removeItem('mycare_user');
-  window.location.href = '/login.html';
+  window.location.href = 'login.html';
 }
 
 // Refresh user from server and update localStorage

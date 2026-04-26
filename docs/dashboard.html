@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard – MyCare</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="css/main.css">
   <style>
     .today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     @media(max-width:800px) { .today-grid { grid-template-columns: 1fr; } }
@@ -37,8 +37,8 @@
 <body>
   <div class="app-layout" id="app-layout"></div>
 
-  <script src="/js/api.js"></script>
-  <script src="/js/layout.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
   <script>
     buildLayout('dashboard', 'Dashboard');
 
@@ -108,19 +108,19 @@
       // Quick Actions
       const quickActionsHtml = `
         <div class="quick-actions">
-          <a href="/medicines.html" class="quick-btn">
+          <a href="medicines.html" class="quick-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             <span>Add Medicine</span>
           </a>
-          <a href="/reminders.html" class="quick-btn">
+          <a href="reminders.html" class="quick-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
             <span>Set Reminder</span>
           </a>
-          <a href="/family.html" class="quick-btn">
+          <a href="family.html" class="quick-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Add Family</span>
           </a>
-          <a href="/pharmacy.html" class="quick-btn">
+          <a href="pharmacy.html" class="quick-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Pharmacy</span>
           </a>
@@ -178,7 +178,7 @@
         <div class="empty-state" style="padding:40px 24px;">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
           <h3>No medicines yet</h3>
-          <p><a href="/medicines.html">Add your first medicine</a> to get started.</p>
+          <p><a href="medicines.html">Add your first medicine</a> to get started.</p>
         </div>
       `;
 
@@ -193,7 +193,7 @@
                 <div class="card-title">Today's Schedule</div>
                 <div class="card-subtitle">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
               </div>
-              <a href="/reminders.html" class="btn btn-outline btn-sm">Manage</a>
+              <a href="reminders.html" class="btn btn-outline btn-sm">Manage</a>
             </div>
             ${scheduleHtml}
           </div>
@@ -203,7 +203,7 @@
                 <div class="card-title">My Medicines</div>
                 <div class="card-subtitle">${medicines.length} medicine${medicines.length !== 1 ? 's' : ''} tracked</div>
               </div>
-              <a href="/medicines.html" class="btn btn-outline btn-sm">View All</a>
+              <a href="medicines.html" class="btn btn-outline btn-sm">View All</a>
             </div>
             ${medsHtml}
           </div>

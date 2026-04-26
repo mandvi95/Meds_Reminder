@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Account – MyCare</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="css/main.css">
   <style>
     body {
       background: linear-gradient(135deg, #EBF6FD 0%, #D1EEFA 50%, #B3E0F7 100%);
@@ -30,7 +30,7 @@
 <body>
   <div class="auth-container">
     <div class="auth-logo">
-      <img src="/assets/Logo_Small.jpg" alt="MyCare">
+      <img src="assets/Logo_Small.jpg" alt="MyCare">
       <p>A Healthcare Revolution</p>
     </div>
 
@@ -64,12 +64,12 @@
       </form>
 
       <div class="auth-footer">
-        Already have an account? <a href="/login.html">Sign in</a>
+        Already have an account? <a href="login.html">Sign in</a>
       </div>
     </div>
   </div>
 
-  <script src="/js/api.js"></script>
+  <script src="js/api.js"></script>
   <script>
     redirectIfLoggedIn();
 
@@ -93,7 +93,7 @@
         localStorage.setItem('mycare_token', res.data.token);
         localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
         showToast('Account created! Welcome to MyCare.', 'success');
-        setTimeout(() => window.location.href = '/dashboard.html', 800);
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
       } else {
         errorBox.textContent = res?.data?.error || 'Registration failed. Please try again.';
         errorBox.style.display = 'block';

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In – MyCare</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="css/main.css">
   <style>
     body {
       background: linear-gradient(135deg, #EBF6FD 0%, #D1EEFA 50%, #B3E0F7 100%);
@@ -61,7 +61,7 @@
 <body>
   <div class="auth-container">
     <div class="auth-logo">
-      <img src="/assets/Logo_Small.jpg" alt="MyCare">
+      <img src="assets/Logo_Small.jpg" alt="MyCare">
       <p>A Healthcare Revolution</p>
     </div>
 
@@ -86,12 +86,12 @@
       </form>
 
       <div class="auth-footer">
-        Don't have an account? <a href="/register.html">Create one free</a>
+        Don't have an account? <a href="register.html">Create one free</a>
       </div>
     </div>
   </div>
 
-  <script src="/js/api.js"></script>
+  <script src="js/api.js"></script>
   <script>
     redirectIfLoggedIn();
 
@@ -112,7 +112,7 @@
       if (res && res.ok) {
         localStorage.setItem('mycare_token', res.data.token);
         localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
-        window.location.href = '/dashboard.html';
+        window.location.href = 'dashboard.html';
       } else {
         errorBox.textContent = res?.data?.error || 'Sign in failed. Please try again.';
         errorBox.style.display = 'block';
