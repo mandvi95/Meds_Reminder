@@ -21,7 +21,7 @@ function buildLayout(activeNav, pageTitle, pageSubtitle = '') {
   const sidebarHtml = `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <img src="assets/Logo_Small.jpg" alt="MyCare" style="height:40px;border-radius:8px;">
+        <img src="assets/Square_LOGO.jpeg" alt="Sevra AI" style="height:40px;border-radius:8px;">
       </div>
       <nav class="sidebar-nav">
         <div class="nav-label">Main Menu</div>
