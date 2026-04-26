@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reminders – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .reminder-card {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); padding: 20px;
+      box-shadow: var(--shadow); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 16px;
+      transition: var(--transition);
+    }
+    .reminder-card:hover { box-shadow: var(--shadow-md); }
+    .reminder-card.inactive { opacity: 0.6; }
+    .time-display {
+      font-size: 28px; font-weight: 800; color: var(--primary);
+      min-width: 90px; line-height: 1;
+    }
+    .time-ampm { font-size: 14px; font-weight: 600; }
+    .reminder-meta { flex: 1; }
+    .reminder-med { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .reminder-days { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .reminder-actions { display: flex; gap: 8px; align-items: center; }
+    .notif-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;
+    }
+    .notif-push { background: var(--primary-bg); color: var(--primary-dark); }
+    .notif-sms { background: #DCFCE7; color: #16A34A; }
+    .notif-call { background: #FEF9C3; color: #D97706; }
+    .notif-all { background: #EDE9FE; color: #7C3AED; }
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: var(--transition); color: var(--text-muted);
+    }
+    .upload-area:hover { border-color: var(--primary); color: var(--primary); }
+    .upload-area input { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="reminderModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Set Reminder</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="medSelect">Medicine *</label>
+          <select id="medSelect">
+            <option value="">Select medicine...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="reminderTime">Reminder Time *</label>
+          <input type="time" id="reminderTime">
+        </div>
+        <div class="form-group">
+          <label>Days of Week</label>
+          <div class="days-picker" id="daysPicker">
+            <button type="button" class="day-btn active" data-day="1">Mon</button>
+            <button type="button" class="day-btn active" data-day="2">Tue</button>
+            <button type="button" class="day-btn active" data-day="3">Wed</button>
+            <button type="button" class="day-btn active" data-day="4">Thu</button>
+            <button type="button" class="day-btn active" data-day="5">Fri</button>
+            <button type="button" class="day-btn active" data-day="6">Sat</button>
+            <button type="button" class="day-btn active" data-day="7">Sun</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notification Type</label>
+          <div class="notif-options">
+            <label class="notif-option active" id="opt-push">
+              <input type="radio" name="notifType" value="push" checked onchange="selectNotifType('push')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              Push
+            </label>
+            <label class="notif-option" id="opt-sms">
+              <input type="radio" name="notifType" value="sms" onchange="selectNotifType('sms')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              SMS
+            </label>
+            <label class="notif-option" id="opt-call">
+              <input type="radio" name="notifType" value="call" onchange="selectNotifType('call')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.62 2 2 0 0 1 3.6 1.44h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16l.42.92z"/></svg>
+              Voice Call
+            </label>
+            <label class="notif-option" id="opt-all">
+              <input type="radio" name="notifType" value="all" onchange="selectNotifType('all')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              All
+            </label>
+          </div>
+          <div class="form-hint" id="notifHint">Browser notification will appear when the app is open.</div>
+        </div>
+
+        <div id="voiceUploadSection" style="display:none;">
+          <div class="form-group">
+            <label>Voice Message (optional)</label>
+            <div class="upload-area" onclick="document.getElementById('voiceFile').click()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style="font-size:13px;font-weight:600;" id="voiceFileLabel">Click to upload .mp3, .wav, .ogg</div>
+              <div style="font-size:11px;margin-top:4px;">Max 16MB • If not uploaded, a text-to-speech message will play</div>
+              <input type="file" id="voiceFile" accept=".mp3,.wav,.ogg,.m4a" onchange="handleVoiceFile(event)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveReminder()" id="saveBtn">Set Reminder</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    buildLayout('reminders', 'Reminders', 'Schedule medicine notifications');
+
+    setTimeout(() => {
+      document.getElementById('topbarActions').innerHTML = `
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Reminder
+        </button>
+      `;
+    }, 50);
+
+    const DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    let reminders = [], medicines = [];
+    let selectedNotifType = 'push';
+    let selectedVoiceFile = null;
+
+    function selectNotifType(type) {
+      selectedNotifType = type;
+      ['push', 'sms', 'call', 'all'].forEach(t => {
+        document.getElementById(`opt-${t}`).classList.toggle('active', t === type);
+      });
+      const hints = {
+        push: 'Browser notification will appear when the app is open.',
+        sms: 'SMS will be sent to your registered phone number.',
+        call: 'An automated call will play your voice message or a text-to-speech message.',
+        all: 'Push notification + SMS + voice call will all be triggered.'
+      };
+      document.getElementById('notifHint').textContent = hints[type];
+      document.getElementById('voiceUploadSection').style.display = (type === 'call' || type === 'all') ? 'block' : 'none';
+    }
+
+    function handleVoiceFile(e) {
+      selectedVoiceFile = e.target.files[0];
+      if (selectedVoiceFile) {
+        document.getElementById('voiceFileLabel').textContent = `Selected: ${selectedVoiceFile.name}`;
+      }
+    }
+
+    function getSelectedDays() {
+      return Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.dataset.day).join(',');
+    }
+
+    async function loadData() {
+      const [remRes, medRes] = await Promise.all([
+        api.get('/reminders'),
+        api.get('/medicines')
+      ]);
+      reminders = remRes?.data?.reminders || [];
+      medicines = medRes?.data?.medicines || [];
+      renderReminders();
+      populateMedSelect();
+    }
+
+    function populateMedSelect() {
+      const sel = document.getElementById('medSelect');
+      sel.innerHTML = '<option value="">Select medicine...</option>' +
+        medicines.map(m => `<option value="${m.id}">${m.name}${m.dosage ? ' – ' + m.dosage : ''}</option>`).join('');
+    }
+
+    function formatTime12(t) {
+      const [h, m] = t.split(':');
+      const hr = parseInt(h);
+      return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+    }
+
+    function daysLabel(daysStr) {
+      const days = daysStr.split(',').map(Number);
+      if (days.length === 7) return 'Every day';
+      if (JSON.stringify(days) === JSON.stringify([1,2,3,4,5])) return 'Weekdays';
+      if (JSON.stringify(days) === JSON.stringify([6,7])) return 'Weekends';
+      return days.map(d => DAYS[d]).join(', ');
+    }
+
+    const notifBadge = {
+      push: '<span class="notif-badge notif-push">Push</span>',
+      sms: '<span class="notif-badge notif-sms">SMS</span>',
+      call: '<span class="notif-badge notif-call">Voice Call</span>',
+      all: '<span class="notif-badge notif-all">All Channels</span>'
+    };
+
+    function renderReminders() {
+      const body = document.getElementById('pageBody');
+      if (!reminders.length) {
+        body.innerHTML = `
+          <div class="empty-state" style="min-height:400px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <h3>No reminders set</h3>
+            <p>${medicines.length ? 'Add a reminder for your medicines.' : 'Add medicines first, then set reminders.'}</p>
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="${medicines.length ? 'openAddModal()' : "window.location.href='/medicines.html'"}">
+              ${medicines.length ? 'Set First Reminder' : 'Add Medicines First'}
+            </button>
+          </div>`;
+        return;
+      }
+
+      const sorted = [...reminders].sort((a, b) => a.time.localeCompare(b.time));
+      body.innerHTML = sorted.map(r => `
+        <div class="reminder-card ${r.is_active ? '' : 'inactive'}">
+          <div style="text-align:center;min-width:90px;">
+            <div class="time-display">${formatTime12(r.time).split(' ')[0]}</div>
+            <div class="time-ampm" style="color:var(--text-muted);">${formatTime12(r.time).split(' ')[1]}</div>
+          </div>
+          <div class="reminder-meta">
+            <div class="reminder-med">${r.medicine_name}</div>
+            <div class="reminder-days">${daysLabel(r.days_of_week)}${r.medicine_dosage ? ' • ' + r.medicine_dosage : ''}</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              ${notifBadge[r.notification_type] || ''}
+              ${r.voice_file ? '<span class="badge badge-gray">🎵 Voice file</span>' : ''}
+            </div>
+          </div>
+          <div class="reminder-actions">
+            <label class="toggle" title="${r.is_active ? 'Disable' : 'Enable'}">
+              <input type="checkbox" ${r.is_active ? 'checked' : ''} onchange="toggleReminder(${r.id}, this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="testReminder(${r.id})" title="Test now">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal(${r.id})">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteReminder(${r.id})" style="color:var(--danger)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('') + `
+        <div class="card" style="margin-top:24px;">
+          <div class="card-header"><div class="card-title">Activity Log</div></div>
+          <div id="logList"><div style="color:var(--text-muted);font-size:13px;">Loading...</div></div>
+        </div>
+      `;
+      loadLogs();
+    }
+
+    async function loadLogs() {
+      const res = await api.get('/reminders/logs');
+      const logs = res?.data?.logs || [];
+      const el = document.getElementById('logList');
+      if (!el) return;
+      if (!logs.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No activity yet.</div>'; return; }
+      el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` + logs.slice(0,10).map(l => `
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+          <span class="badge ${l.status === 'sent' ? 'badge-green' : 'badge-red'}">${l.status}</span>
+          <span>${l.channel || '—'}</span>
+          <span style="color:var(--text-muted);">${new Date(l.triggered_at).toLocaleString('en-IN')}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    function openAddModal() {
+      document.getElementById('editId').value = '';
+      document.getElementById('medSelect').value = '';
+      document.getElementById('reminderTime').value = '';
+      document.querySelectorAll('.day-btn').forEach(b => b.classList.add('active'));
+      selectNotifType('push');
+      document.getElementById('modalTitle').textContent = 'Set Reminder';
+      document.getElementById('saveBtn').textContent = 'Set Reminder';
+      selectedVoiceFile = null;
+      document.getElementById('voiceFileLabel').textContent = 'Click to upload .mp3, .wav, .ogg';
+      document.getElementById('reminderModal').classList.add('open');
+    }
+
+    function openEditModal(id) {
+      const r = reminders.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('editId').value = id;
+      document.getElementById('medSelect').value = r.medicine_id;
+      document.getElementById('reminderTime').value = r.time;
+      const days = r.days_of_week.split(',');
+      document.querySelectorAll('.day-btn').forEach(b => {
+        b.classList.toggle('active', days.includes(b.dataset.day));
+      });
+      selectNotifType(r.notification_type);
+      document.getElementById('modalTitle').textContent = 'Edit Reminder';
+      document.getElementById('saveBtn').textContent = 'Save Changes';
+      selectedVoiceFile = null;
+      document.getElementById('voiceFileLabel').textContent = r.voice_file ? `Current: ${r.voice_file}` : 'Click to upload .mp3, .wav, .ogg';
+      document.getElementById('reminderModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('reminderModal').classList.remove('open'); }
+
+    async function saveReminder() {
+      const medId = document.getElementById('medSelect').value;
+      const time = document.getElementById('reminderTime').value;
+      if (!medId) { showToast('Select a medicine', 'error'); return; }
+      if (!time) { showToast('Select a time', 'error'); return; }
+      const days = getSelectedDays();
+      if (!days) { showToast('Select at least one day', 'error'); return; }
+
+      const editId = document.getElementById('editId').value;
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+
+      const data = { medicine_id: parseInt(medId), time, days_of_week: days, notification_type: selectedNotifType };
+      let res;
+      if (editId) {
+        res = await api.put(`/reminders/${editId}`, data);
+      } else {
+        res = await api.post('/reminders', data);
+      }
+
+      if (res?.ok) {
+        // Upload voice file if selected
+        if (selectedVoiceFile) {
+          const remId = editId || res.data.reminder.id;
+          const fd = new FormData();
+          fd.append('file', selectedVoiceFile);
+          await api.upload(`/reminders/${remId}/voice`, fd);
+        }
+        showToast(editId ? 'Reminder updated!' : 'Reminder set!', 'success');
+        closeModal();
+        loadData();
+      } else {
+        showToast(res?.data?.error || 'Failed to save reminder', 'error');
+      }
+      btn.disabled = false;
+    }
+
+    async function toggleReminder(id, active) {
+      await api.put(`/reminders/${id}`, { is_active: active });
+      reminders = reminders.map(r => r.id === id ? { ...r, is_active: active } : r);
+    }
+
+    async function testReminder(id) {
+      showToast('Sending test notification...', 'info');
+      const res = await api.post(`/reminders/${id}/test`, {});
+      if (res?.ok) {
+        const results = res.data.results;
+        Object.entries(results).forEach(([ch, r]) => {
+          showToast(`${ch.toUpperCase()}: ${r.message}`, r.success ? 'success' : 'error');
+        });
+        loadLogs();
+      }
+    }
+
+    async function deleteReminder(id) {
+      if (!confirm('Delete this reminder?')) return;
+      const res = await api.delete(`/reminders/${id}`);
+      if (res?.ok) { showToast('Reminder deleted', 'success'); loadData(); }
+    }
+
+    document.querySelectorAll('.day-btn').forEach(b => {
+      b.addEventListener('click', () => b.classList.toggle('active'));
+    });
+
+    document.getElementById('reminderModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
