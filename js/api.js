@@ -1,5 +1,4 @@
-// TODO: After deploying backend to Render, replace this URL with your actual Render URL
-const API_BASE = 'https://YOUR-RENDER-APP.onrender.com/api';
+const API_BASE = 'https://sevra-meds-reminder.onrender.com/api';
 
 function getToken() {
   return localStorage.getItem('mycare_token');
