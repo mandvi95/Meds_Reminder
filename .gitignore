@@ -16,5 +16,6 @@ venv/
 # macOS
 .DS_Store
 
-# Voice messages (runtime generated)
 voice_messages/
+node_modules/
+backend/node_modules/
