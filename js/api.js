@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://meds-reminder.onrender.com/api';
 
 function getToken() {
   return localStorage.getItem('mycare_token');
