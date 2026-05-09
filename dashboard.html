@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media(max-width:800px) { .today-grid { grid-template-columns: 1fr; } }
+    .med-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .med-item:last-child { border-bottom: none; }
+    .med-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .med-name { font-weight: 600; font-size: 14px; }
+    .med-dose { font-size: 12px; color: var(--text-muted); }
+    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .quick-btn {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 16px;
+      text-align: center; cursor: pointer; transition: var(--transition);
+      text-decoration: none; color: var(--text);
+    }
+    .quick-btn:hover { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .quick-btn svg { width: 28px; height: 28px; margin: 0 auto 10px; display: block; }
+    .quick-btn span { font-size: 12px; font-weight: 600; }
+    @media(max-width:600px) { .quick-actions { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    buildLayout('dashboard', 'Dashboard');
+
+    async function loadDashboard() {
+      const user = await refreshUser();
+      const [medsRes, remindersRes] = await Promise.all([
+        api.get('/medicines'),
+        api.get('/reminders')
+      ]);
+
+      const medicines = medsRes?.data?.medicines || [];
+      const reminders = remindersRes?.data?.reminders || [];
+      const activeReminders = reminders.filter(r => r.is_active);
+
+      // Stats
+      const now = new Date();
+      const nowTime = now.getHours() * 60 + now.getMinutes();
+      const todayDay = now.getDay() === 0 ? 7 : now.getDay();
+
+      const todayReminders = reminders.filter(r => {
+        if (!r.is_active) return false;
+        const days = r.days_of_week.split(',');
+        return days.includes(String(todayDay));
+      });
+
+      const statsHtml = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </div>
+            <div>
+              <div class="stat-value">${medicines.length}</div>
+              <div class="stat-label">Medicines Tracked</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            </div>
+            <div>
+              <div class="stat-value">${activeReminders.length}</div>
+              <div class="stat-label">Active Reminders</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <div class="stat-value">${todayReminders.length}</div>
+              <div class="stat-label">Doses Today</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="stat-value">${user?.name?.split(' ')[0] || 'You'}</div>
+              <div class="stat-label">Logged In As</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Quick Actions
+      const quickActionsHtml = `
+        <div class="quick-actions">
+          <a href="medicines.html" class="quick-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <span>Add Medicine</span>
+          </a>
+          <a href="reminders.html" class="quick-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span>Set Reminder</span>
+          </a>
+          <a href="family.html" class="quick-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Add Family</span>
+          </a>
+          <a href="pharmacy.html" class="quick-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Pharmacy</span>
+          </a>
+        </div>
+      `;
+
+      // Today's schedule
+      const sortedToday = todayReminders.sort((a, b) => a.time.localeCompare(b.time));
+      const colors = { blue: '#51B4ED', green: '#22C55E', yellow: '#F59E0B', red: '#EF4444', purple: '#A855F7', pink: '#EC4899' };
+      const colorEmojis = { blue: '💊', green: '🌿', yellow: '⭐', red: '❤️', purple: '💜', pink: '🌸' };
+
+      const scheduleHtml = sortedToday.length ? sortedToday.map(r => {
+        const [h, m] = r.time.split(':');
+        const hour = parseInt(h), min = m;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        const timeStr = `${h12}:${min} ${ampm}`;
+        const isPast = (hour * 60 + parseInt(min)) < nowTime;
+        return `
+          <div class="med-item">
+            <div class="med-icon" style="background:${colors['blue']}22">
+              <span>${colorEmojis['blue']}</span>
+            </div>
+            <div style="flex:1">
+              <div class="med-name">${r.medicine_name}</div>
+              <div class="med-dose">${r.medicine_dosage || 'Take as prescribed'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700;font-size:13px;">${timeStr}</div>
+              <span class="badge ${isPast ? 'badge-gray' : 'badge-blue'}" style="font-size:10px;">${isPast ? 'Past' : 'Upcoming'}</span>
+            </div>
+          </div>
+        `;
+      }).join('') : `
+        <div class="empty-state" style="padding:40px 24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <h3>No reminders today</h3>
+          <p>Add medicines and set reminders to see your schedule here.</p>
+        </div>
+      `;
+
+      // Recent medicines
+      const recentMeds = medicines.slice(0, 5);
+      const medsHtml = recentMeds.length ? recentMeds.map(m => `
+        <div class="med-item">
+          <div class="med-icon" style="background:${colors[m.color] || colors.blue}22">
+            <span>${colorEmojis[m.color] || '💊'}</span>
+          </div>
+          <div style="flex:1">
+            <div class="med-name">${m.name}</div>
+            <div class="med-dose">${m.dosage || ''} ${m.frequency ? '• ' + m.frequency : ''}</div>
+          </div>
+        </div>
+      `).join('') : `
+        <div class="empty-state" style="padding:40px 24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          <h3>No medicines yet</h3>
+          <p><a href="medicines.html">Add your first medicine</a> to get started.</p>
+        </div>
+      `;
+
+      document.getElementById('pageBody').innerHTML = `
+        ${statsHtml}
+        <div style="margin-bottom:8px;"><span style="font-size:13px;color:var(--text-muted);">Quick Actions</span></div>
+        ${quickActionsHtml}
+        <div class="today-grid">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Today's Schedule</div>
+                <div class="card-subtitle">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+              </div>
+              <a href="reminders.html" class="btn btn-outline btn-sm">Manage</a>
+            </div>
+            ${scheduleHtml}
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">My Medicines</div>
+                <div class="card-subtitle">${medicines.length} medicine${medicines.length !== 1 ? 's' : ''} tracked</div>
+              </div>
+              <a href="medicines.html" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            ${medsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    loadDashboard();
+
+    // Poll for push notifications every 60 seconds
+    setInterval(async () => {
+      const res = await api.get('/reminders/pending');
+      if (res?.data?.pending?.length) {
+        res.data.pending.forEach(p => {
+          showToast(`Time to take your medicine!`, 'info');
+        });
+      }
+    }, 60000);
+  </script>
+</body>
+</html>

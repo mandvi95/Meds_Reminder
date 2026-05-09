@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .member-card {
+      background: var(--white); border-radius: var(--radius); border: 1px solid var(--border);
+      padding: 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px;
+      transition: var(--transition); margin-bottom: 12px;
+    }
+    .member-card:hover { box-shadow: var(--shadow-md); }
+    .member-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; flex-shrink: 0; }
+    .member-info { flex: 1; }
+    .member-name { font-size: 16px; font-weight: 700; }
+    .member-email { font-size: 13px; color: var(--text-muted); }
+    .member-phone { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .role-pill {
+      padding: 5px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; cursor: pointer; border: none;
+      transition: var(--transition);
+    }
+    .role-member { background: #F1F5F9; color: #64748B; }
+    .role-support { background: #DCFCE7; color: #16A34A; }
+    .family-section { margin-bottom: 32px; }
+    .family-section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <!-- Invite Modal -->
+  <div class="modal-overlay" id="inviteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Invite Family Member</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--primary-bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px;font-size:13px;color:var(--primary-dark);">
+          <strong>Note:</strong> The person must already have a MyCare account. Share this app with them first!
+        </div>
+        <div class="form-group">
+          <label for="inviteEmail">Their Email Address</label>
+          <input type="email" id="inviteEmail" placeholder="family@example.com">
+        </div>
+        <div class="form-group">
+          <label>Access Level</label>
+          <div class="notif-options">
+            <label class="notif-option active" id="opt-member">
+              <input type="radio" name="roleType" value="member" checked onchange="selectRole('member')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Member (View Only)
+            </label>
+            <label class="notif-option" id="opt-support">
+              <input type="radio" name="roleType" value="support" onchange="selectRole('support')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Support (Full Access)
+            </label>
+          </div>
+          <div class="form-hint" id="roleHint">Can view your medicine schedule only.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="sendInvite()" id="saveBtn">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    buildLayout('family', 'Family Access', 'Manage your care circle');
+
+    setTimeout(() => {
+      document.getElementById('topbarActions').innerHTML = `
+        <button class="btn btn-primary" onclick="openInviteModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Member
+        </button>
+      `;
+    }, 50);
+
+    let members = [], myFamilies = [];
+    let selectedRole = 'member';
+
+    function selectRole(r) {
+      selectedRole = r;
+      ['member', 'support'].forEach(t => {
+        document.getElementById(`opt-${t}`).classList.toggle('active', t === r);
+      });
+      document.getElementById('roleHint').textContent = r === 'member'
+        ? 'Can view your medicine schedule only.'
+        : 'Can view and manage your medicines and reminders.';
+    }
+
+    async function loadFamily() {
+      const [ownRes, memberRes] = await Promise.all([
+        api.get('/family'),
+        api.get('/family/my-families')
+      ]);
+      members = ownRes?.data?.family || [];
+      myFamilies = memberRes?.data?.families || [];
+      renderFamily();
+    }
+
+    function renderFamily() {
+      const body = document.getElementById('pageBody');
+
+      const myMembersHtml = members.length ? members.map(m => `
+        <div class="member-card">
+          <div class="member-avatar" style="background:${m.role === 'support' ? '#22C55E' : 'var(--primary)'}">
+            ${initials(m.member_name)}
+          </div>
+          <div class="member-info">
+            <div class="member-name">${m.member_name}</div>
+            <div class="member-email">${m.member_email}</div>
+            ${m.member_phone ? `<div class="member-phone">${m.member_phone}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="role-pill ${m.role === 'support' ? 'role-support' : 'role-member'}"
+              onclick="toggleRole(${m.id}, '${m.role}')">
+              ${m.role === 'support' ? 'Support' : 'Member'}
+            </button>
+            <button class="btn btn-ghost btn-icon" onclick="removeMember(${m.id}, '${m.member_name}')" style="color:var(--danger)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('') : `
+        <div class="empty-state" style="padding:48px 24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3>No family members yet</h3>
+          <p>Invite family members to monitor and support your health journey.</p>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="openInviteModal()">Invite First Member</button>
+        </div>
+      `;
+
+      const myFamiliesHtml = myFamilies.length ? `
+        <div class="family-section">
+          <div class="family-section-title">Families I'm Part Of</div>
+          ${myFamilies.map(f => `
+            <div class="member-card">
+              <div class="member-avatar" style="background:#A855F7">${initials(f.owner_name)}</div>
+              <div class="member-info">
+                <div class="member-name">${f.owner_name}</div>
+                <div class="member-email">${f.owner_email}</div>
+              </div>
+              <span class="badge ${f.role === 'support' ? 'badge-green' : 'badge-gray'}">${f.role === 'support' ? 'Support' : 'Member'}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div class="card">
+            <div class="stat-icon blue" style="width:48px;height:48px;margin-bottom:12px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="stat-value">${members.length}</div>
+            <div class="stat-label">Members in my circle</div>
+          </div>
+          <div class="card">
+            <div class="stat-icon green" style="width:48px;height:48px;margin-bottom:12px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-value">${members.filter(m => m.role === 'support').length}</div>
+            <div class="stat-label">Support caregivers</div>
+          </div>
+        </div>
+
+        ${myFamiliesHtml}
+
+        <div class="family-section">
+          <div class="family-section-title">My Care Circle</div>
+          ${myMembersHtml}
+        </div>
+
+        <div class="card" style="background:var(--primary-bg);border-color:var(--primary-light);">
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="font-size:24px;">ℹ️</div>
+            <div>
+              <div style="font-weight:700;margin-bottom:6px;color:var(--primary-dark);">Role Differences</div>
+              <div style="font-size:13px;color:var(--text);line-height:1.6;">
+                <strong>Member</strong> — Can view your medicine schedule and reminders (read-only).<br>
+                <strong>Support</strong> — Full access: can view and help manage your medicines. Best for close family caregivers.
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openInviteModal() {
+      document.getElementById('inviteEmail').value = '';
+      selectRole('member');
+      document.getElementById('inviteModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('inviteModal').classList.remove('open'); }
+
+    async function sendInvite() {
+      const email = document.getElementById('inviteEmail').value.trim();
+      if (!email) { showToast('Email is required', 'error'); return; }
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      const res = await api.post('/family/invite', { email, role: selectedRole });
+      btn.disabled = false;
+      if (res?.ok) {
+        showToast('Member added successfully!', 'success');
+        closeModal();
+        loadFamily();
+      } else {
+        showToast(res?.data?.error || 'Failed to add member', 'error');
+      }
+    }
+
+    async function toggleRole(id, current) {
+      const newRole = current === 'member' ? 'support' : 'member';
+      const res = await api.put(`/family/${id}`, { role: newRole });
+      if (res?.ok) { showToast(`Role changed to ${newRole}`, 'success'); loadFamily(); }
+    }
+
+    async function removeMember(id, name) {
+      if (!confirm(`Remove ${name} from your family circle?`)) return;
+      const res = await api.delete(`/family/${id}`);
+      if (res?.ok) { showToast('Member removed', 'success'); loadFamily(); }
+    }
+
+    document.getElementById('inviteModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    loadFamily();
+  </script>
+</body>
+</html>

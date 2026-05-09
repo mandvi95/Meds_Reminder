@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicines – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .med-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .med-card {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); padding: 20px;
+      box-shadow: var(--shadow); transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .med-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .med-card-accent {
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    }
+    .med-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+    .med-card-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .med-card-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+    .med-card-dosage { font-size: 13px; color: var(--text-muted); }
+    .med-card-actions { display: flex; gap: 4px; }
+    .med-detail { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+    .med-detail-label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; width: 70px; flex-shrink: 0; padding-top: 1px; }
+    .med-detail-value { font-size: 13px; color: var(--text); }
+    .med-card-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="medModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Add Medicine</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="medName">Medicine Name *</label>
+          <input type="text" id="medName" placeholder="e.g. Metformin">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="medDosage">Dosage</label>
+            <input type="text" id="medDosage" placeholder="e.g. 500mg">
+          </div>
+          <div class="form-group">
+            <label for="medFrequency">Frequency</label>
+            <input type="text" id="medFrequency" placeholder="e.g. Twice daily">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="medInstructions">Instructions</label>
+          <textarea id="medInstructions" rows="2" placeholder="e.g. Take after meals with water"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="medStart">Start Date</label>
+            <input type="date" id="medStart">
+          </div>
+          <div class="form-group">
+            <label for="medEnd">End Date</label>
+            <input type="date" id="medEnd">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Color Label</label>
+          <div class="color-picker" id="colorPicker">
+            <div class="color-swatch selected" data-color="blue" onclick="selectColor('blue')"></div>
+            <div class="color-swatch" data-color="green" onclick="selectColor('green')"></div>
+            <div class="color-swatch" data-color="yellow" onclick="selectColor('yellow')"></div>
+            <div class="color-swatch" data-color="red" onclick="selectColor('red')"></div>
+            <div class="color-swatch" data-color="purple" onclick="selectColor('purple')"></div>
+            <div class="color-swatch" data-color="pink" onclick="selectColor('pink')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMedicine()" id="saveBtn">Add Medicine</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    buildLayout('medicines', 'Medicines', 'Track and manage your medications');
+
+    // Add topbar action
+    setTimeout(() => {
+      document.getElementById('topbarActions').innerHTML = `
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Medicine
+        </button>
+      `;
+    }, 50);
+
+    const colors = { blue: '#51B4ED', green: '#22C55E', yellow: '#F59E0B', red: '#EF4444', purple: '#A855F7', pink: '#EC4899' };
+    const colorEmojis = { blue: '💊', green: '🌿', yellow: '⭐', red: '❤️', purple: '🔮', pink: '🌸' };
+    let selectedColor = 'blue';
+    let medicines = [];
+
+    function selectColor(c) {
+      selectedColor = c;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      document.querySelector(`[data-color="${c}"]`).classList.add('selected');
+    }
+
+    async function loadMedicines() {
+      const res = await api.get('/medicines');
+      medicines = res?.data?.medicines || [];
+      renderMedicines();
+    }
+
+    function renderMedicines() {
+      const body = document.getElementById('pageBody');
+      if (!medicines.length) {
+        body.innerHTML = `
+          <div class="empty-state" style="min-height:400px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <h3>No medicines yet</h3>
+            <p>Add your first medicine to start tracking your health.</p>
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="openAddModal()">Add First Medicine</button>
+          </div>
+        `;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="med-grid">
+          ${medicines.map(m => `
+            <div class="med-card">
+              <div class="med-card-accent" style="background:${colors[m.color] || colors.blue}"></div>
+              <div class="med-card-header">
+                <div style="display:flex;gap:12px;align-items:center;">
+                  <div class="med-card-icon" style="background:${colors[m.color] || colors.blue}22;">
+                    ${colorEmojis[m.color] || '💊'}
+                  </div>
+                  <div>
+                    <div class="med-card-title">${m.name}</div>
+                    <div class="med-card-dosage">${m.dosage || 'No dosage specified'}</div>
+                  </div>
+                </div>
+                <div class="med-card-actions">
+                  <button class="btn btn-icon btn-ghost" onclick="openEditModal(${m.id})" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="btn btn-icon btn-ghost" onclick="deleteMedicine(${m.id}, '${m.name}')" title="Delete" style="color:var(--danger)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  </button>
+                </div>
+              </div>
+              ${m.frequency ? `<div class="med-detail"><span class="med-detail-label">Frequency</span><span class="med-detail-value">${m.frequency}</span></div>` : ''}
+              ${m.instructions ? `<div class="med-detail"><span class="med-detail-label">Notes</span><span class="med-detail-value">${m.instructions}</span></div>` : ''}
+              ${m.start_date ? `<div class="med-detail"><span class="med-detail-label">Start</span><span class="med-detail-value">${m.start_date}</span></div>` : ''}
+              ${m.end_date ? `<div class="med-detail"><span class="med-detail-label">End</span><span class="med-detail-value">${m.end_date}</span></div>` : ''}
+              <div class="med-card-footer">
+                <a href="reminders.html" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                  Set Reminder
+                </a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function openAddModal() {
+      document.getElementById('editId').value = '';
+      document.getElementById('medName').value = '';
+      document.getElementById('medDosage').value = '';
+      document.getElementById('medFrequency').value = '';
+      document.getElementById('medInstructions').value = '';
+      document.getElementById('medStart').value = '';
+      document.getElementById('medEnd').value = '';
+      document.getElementById('modalTitle').textContent = 'Add Medicine';
+      document.getElementById('saveBtn').textContent = 'Add Medicine';
+      selectColor('blue');
+      document.getElementById('medModal').classList.add('open');
+    }
+
+    function openEditModal(id) {
+      const m = medicines.find(x => x.id === id);
+      if (!m) return;
+      document.getElementById('editId').value = id;
+      document.getElementById('medName').value = m.name;
+      document.getElementById('medDosage').value = m.dosage || '';
+      document.getElementById('medFrequency').value = m.frequency || '';
+      document.getElementById('medInstructions').value = m.instructions || '';
+      document.getElementById('medStart').value = m.start_date || '';
+      document.getElementById('medEnd').value = m.end_date || '';
+      document.getElementById('modalTitle').textContent = 'Edit Medicine';
+      document.getElementById('saveBtn').textContent = 'Save Changes';
+      selectColor(m.color || 'blue');
+      document.getElementById('medModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('medModal').classList.remove('open');
+    }
+
+    async function saveMedicine() {
+      const name = document.getElementById('medName').value.trim();
+      if (!name) { showToast('Medicine name is required', 'error'); return; }
+
+      const data = {
+        name,
+        dosage: document.getElementById('medDosage').value.trim(),
+        frequency: document.getElementById('medFrequency').value.trim(),
+        instructions: document.getElementById('medInstructions').value.trim(),
+        start_date: document.getElementById('medStart').value,
+        end_date: document.getElementById('medEnd').value,
+        color: selectedColor
+      };
+
+      const editId = document.getElementById('editId').value;
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+
+      let res;
+      if (editId) {
+        res = await api.put(`/medicines/${editId}`, data);
+      } else {
+        res = await api.post('/medicines', data);
+      }
+
+      btn.disabled = false;
+
+      if (res?.ok) {
+        showToast(editId ? 'Medicine updated!' : 'Medicine added!', 'success');
+        closeModal();
+        loadMedicines();
+      } else {
+        showToast(res?.data?.error || 'Failed to save medicine', 'error');
+      }
+    }
+
+    async function deleteMedicine(id, name) {
+      if (!confirm(`Delete "${name}"? This will also delete all its reminders.`)) return;
+      const res = await api.delete(`/medicines/${id}`);
+      if (res?.ok) {
+        showToast('Medicine deleted', 'success');
+        loadMedicines();
+      } else {
+        showToast('Failed to delete medicine', 'error');
+      }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('medModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    loadMedicines();
+  </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .pharmacy-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    @media(max-width:900px) { .pharmacy-grid { grid-template-columns: 1fr; } }
+    .med-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .catalog-card {
+      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; cursor: pointer; transition: var(--transition);
+    }
+    .catalog-card:hover { border-color: var(--primary); box-shadow: var(--shadow); transform: translateY(-2px); }
+    .catalog-card.selected { border-color: var(--primary); background: var(--primary-bg); }
+    .catalog-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .catalog-cat { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .catalog-price { font-size: 15px; font-weight: 800; color: var(--primary); margin-top: 8px; }
+    .order-card { position: sticky; top: 80px; }
+    .order-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .order-item:last-child { border-bottom: none; }
+    .qty-control { display: flex; align-items: center; gap: 8px; }
+    .qty-btn { width: 28px; height: 28px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--white); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .qty-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .status-pending { background: var(--warning); }
+    .status-confirmed { background: var(--success); }
+    .status-delivered { background: var(--primary); }
+    .status-cancelled { background: var(--danger); }
+    .categories { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .cat-btn { padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--border); background: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); color: var(--text-muted); }
+    .cat-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+    .tab-bar { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+    .tab { padding: 12px 20px; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: var(--transition); }
+    .tab.active { color: var(--primary); border-color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <!-- Order Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Place Order</div>
+        <button class="modal-close" onclick="closeOrderModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="orderMed">Medicine Name *</label>
+          <input type="text" id="orderMed" placeholder="e.g. Paracetamol 500mg">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="orderQty">Quantity</label>
+            <input type="number" id="orderQty" min="1" max="100" value="1">
+          </div>
+          <div class="form-group">
+            <label for="orderForm">Dosage Form</label>
+            <select id="orderForm">
+              <option value="">Select...</option>
+              <option>Tablet</option>
+              <option>Capsule</option>
+              <option>Syrup</option>
+              <option>Injection</option>
+              <option>Cream</option>
+              <option>Drops</option>
+              <option>Inhaler</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="orderNotes">Special Instructions</label>
+          <textarea id="orderNotes" placeholder="Any special instructions for the pharmacy..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeOrderModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmOrder()" id="orderBtn">Confirm Order</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    buildLayout('pharmacy', 'Pharmacy', 'Search and order medicines');
+
+    setTimeout(() => {
+      document.getElementById('topbarActions').innerHTML = `
+        <button class="btn btn-primary" onclick="openOrderModal('')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Custom Order
+        </button>
+      `;
+    }, 50);
+
+    let catalog = [], orders = [], searchQuery = '', selectedCategory = '';
+    let activeTab = 'browse';
+
+    async function loadData() {
+      const [catRes, ordRes] = await Promise.all([
+        api.get('/pharmacy/search?q='),
+        api.get('/pharmacy/orders')
+      ]);
+      catalog = catRes?.data?.medicines || [];
+      orders = ordRes?.data?.orders || [];
+      render();
+    }
+
+    const CATEGORIES = ['All', 'Pain Relief', 'Antibiotic', 'Diabetes', 'Blood Pressure', 'Cholesterol', 'Acidity', 'Allergy', 'Heart', 'Supplement'];
+
+    function render() {
+      const body = document.getElementById('pageBody');
+      body.innerHTML = `
+        <div class="tab-bar">
+          <div class="tab ${activeTab === 'browse' ? 'active' : ''}" onclick="switchTab('browse')">Browse Medicines</div>
+          <div class="tab ${activeTab === 'orders' ? 'active' : ''}" onclick="switchTab('orders')">
+            My Orders ${orders.length ? `<span class="nav-badge">${orders.length}</span>` : ''}
+          </div>
+        </div>
+        <div id="tabContent"></div>
+      `;
+      renderTab();
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderTab();
+    }
+
+    function renderTab() {
+      const el = document.getElementById('tabContent');
+      if (activeTab === 'browse') renderBrowse(el);
+      else renderOrders(el);
+    }
+
+    function renderBrowse(el) {
+      const filtered = catalog.filter(m => {
+        const q = searchQuery.toLowerCase();
+        const matchQ = !q || m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q);
+        const matchC = !selectedCategory || selectedCategory === 'All' || m.category === selectedCategory;
+        return matchQ && matchC;
+      });
+
+      el.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+          <div class="search-wrap" style="margin-bottom:16px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search medicines..." value="${searchQuery}" oninput="searchQuery=this.value;renderTab()">
+          </div>
+          <div class="categories">
+            ${CATEGORIES.map(c => `<button class="cat-btn ${selectedCategory === c || (!selectedCategory && c === 'All') ? 'active' : ''}" onclick="selectCat('${c}')">${c}</button>`).join('')}
+          </div>
+        </div>
+        <div class="med-catalog-grid">
+          ${filtered.map(m => `
+            <div class="catalog-card" onclick="openOrderModal('${m.name}')">
+              <div class="catalog-cat">${m.category}</div>
+              <div class="catalog-name">${m.name}</div>
+              <div class="catalog-price">${m.price}</div>
+              <button class="btn btn-primary btn-sm" style="width:100%;margin-top:12px;" onclick="event.stopPropagation();openOrderModal('${m.name}')">
+                Order Now
+              </button>
+            </div>
+          `).join('')}
+          ${!filtered.length ? '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted);">No medicines found</div>' : ''}
+        </div>
+      `;
+    }
+
+    function renderOrders(el) {
+      if (!orders.length) {
+        el.innerHTML = `
+          <div class="empty-state" style="padding:64px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <h3>No orders yet</h3>
+            <p>Browse medicines and place your first order.</p>
+          </div>`;
+        return;
+      }
+      el.innerHTML = `
+        <div class="card">
+          <div class="card-header"><div class="card-title">Order History</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Qty</th>
+                  <th>Form</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orders.map(o => `
+                  <tr>
+                    <td><strong>${o.medicine_name}</strong></td>
+                    <td>${o.quantity}</td>
+                    <td>${o.dosage_form || '—'}</td>
+                    <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+                    <td>
+                      <span class="badge ${o.status === 'pending' ? 'badge-yellow' : o.status === 'confirmed' ? 'badge-green' : o.status === 'delivered' ? 'badge-blue' : 'badge-red'}">
+                        <span class="status-dot status-${o.status}"></span>
+                        ${o.status.charAt(0).toUpperCase() + o.status.slice(1)}
+                      </span>
+                    </td>
+                    <td>
+                      ${o.status === 'pending' ? `<button class="btn btn-ghost btn-sm" onclick="cancelOrder(${o.id})" style="color:var(--danger)">Cancel</button>` : '—'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectCat(c) {
+      selectedCategory = c;
+      renderTab();
+    }
+
+    function openOrderModal(name) {
+      document.getElementById('orderMed').value = name;
+      document.getElementById('orderQty').value = 1;
+      document.getElementById('orderForm').value = '';
+      document.getElementById('orderNotes').value = '';
+      document.getElementById('orderModal').classList.add('open');
+    }
+
+    function closeOrderModal() { document.getElementById('orderModal').classList.remove('open'); }
+
+    async function confirmOrder() {
+      const name = document.getElementById('orderMed').value.trim();
+      if (!name) { showToast('Medicine name is required', 'error'); return; }
+      const btn = document.getElementById('orderBtn');
+      btn.disabled = true;
+      const res = await api.post('/pharmacy/order', {
+        medicine_name: name,
+        quantity: parseInt(document.getElementById('orderQty').value) || 1,
+        dosage_form: document.getElementById('orderForm').value,
+        notes: document.getElementById('orderNotes').value
+      });
+      btn.disabled = false;
+      if (res?.ok) {
+        showToast('Order placed successfully!', 'success');
+        closeOrderModal();
+        activeTab = 'orders';
+        const ordRes = await api.get('/pharmacy/orders');
+        orders = ordRes?.data?.orders || [];
+        render();
+      } else {
+        showToast(res?.data?.error || 'Order failed', 'error');
+      }
+    }
+
+    async function cancelOrder(id) {
+      if (!confirm('Cancel this order?')) return;
+      const res = await api.delete(`/pharmacy/orders/${id}`);
+      if (res?.ok) {
+        showToast('Order cancelled', 'success');
+        const ordRes = await api.get('/pharmacy/orders');
+        orders = ordRes?.data?.orders || [];
+        renderTab();
+      }
+    }
+
+    document.getElementById('orderModal').addEventListener('click', function(e) {
+      if (e.target === this) closeOrderModal();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
