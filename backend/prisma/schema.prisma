@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  phone       String?
+  password    String
+  role        String   @default("admin")
+  is_verified Boolean  @default(false)
+  otp         String?
+  otp_expiry  DateTime?
+  created_at  DateTime @default(now())
+
+  medicines   Medicine[]
+  reminders   Reminder[]
+}
+
+model Medicine {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  name         String
+  dosage       String?
+  frequency    String?
+  instructions String?
+  start_date   String?
+  end_date     String?
+  color        String?  @default("blue")
+  created_at   DateTime @default(now())
+
+  user         User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  reminders    Reminder[]
+}
+
+model Reminder {
+  id                Int      @id @default(autoincrement())
+  user_id           Int
+  medicine_id       Int
+  time              String
+  days_of_week      String
+  notification_type String   @default("push")
+  voice_file        String?
+  is_active         Boolean  @default(true)
+  next_call_at      DateTime?
+  call_status       String   @default("pending")
+  created_at        DateTime @default(now())
+
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  medicine          Medicine @relation(fields: [medicine_id], references: [id], onDelete: Cascade)
+}

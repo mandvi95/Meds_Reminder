@@ -114,7 +114,17 @@
         localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
         window.location.href = 'dashboard.html';
       } else {
-        errorBox.textContent = res?.data?.error || 'Sign in failed. Please try again.';
+        let errorMsg = res?.data?.error;
+        if (!errorMsg) {
+          if (res?.status === 401) errorMsg = 'Incorrect email or password.';
+          else if (res?.status === 403) errorMsg = 'Email not verified. Please sign up again to receive a new OTP.';
+          else if (res?.status === 404) errorMsg = 'No user exists with this email address.';
+          else errorMsg = 'Sign in failed. Please try again.';
+        } else if (res?.status === 403) {
+          errorMsg = 'Email not verified. Please sign up again to receive a new OTP.';
+        }
+        
+        errorBox.textContent = errorMsg;
         errorBox.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = 'Sign In';

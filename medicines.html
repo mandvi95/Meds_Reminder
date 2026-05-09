@@ -52,12 +52,18 @@
           </div>
           <div class="form-group">
             <label for="medFrequency">Frequency</label>
-            <input type="text" id="medFrequency" placeholder="e.g. Twice daily">
+            <select id="medFrequency" onchange="handleFrequencyChange()">
+              <option value="">Select frequency...</option>
+              <option value="QD once daily">QD once daily</option>
+              <option value="BID twice a day">BID twice a day</option>
+              <option value="TID Three times a day">TID Three times a day</option>
+              <option value="QID Four times a day">QID Four times a day</option>
+            </select>
           </div>
         </div>
-        <div class="form-group">
-          <label for="medInstructions">Instructions</label>
-          <textarea id="medInstructions" rows="2" placeholder="e.g. Take after meals with water"></textarea>
+        <div class="form-group" id="instructionsContainer">
+          <label>Instructions</label>
+          <input type="text" class="dynamic-inst" placeholder="e.g. Take after meals with water">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -107,6 +113,22 @@
     const colorEmojis = { blue: '💊', green: '🌿', yellow: '⭐', red: '❤️', purple: '🔮', pink: '🌸' };
     let selectedColor = 'blue';
     let medicines = [];
+
+    function handleFrequencyChange() {
+      const freq = document.getElementById('medFrequency').value;
+      const container = document.getElementById('instructionsContainer');
+      let count = 1;
+      if (freq.includes('BID')) count = 2;
+      else if (freq.includes('TID')) count = 3;
+      else if (freq.includes('QID')) count = 4;
+      
+      let html = '<label>Instructions</label>';
+      for (let i = 1; i <= count; i++) {
+        let label = count === 1 ? 'e.g. Take after meals with water' : `${i}${['st','nd','rd'][i-1]||'th'} time instruction`;
+        html += `<input type="text" class="dynamic-inst" placeholder="${label}" style="margin-bottom:8px;">`;
+      }
+      container.innerHTML = html;
+    }
 
     function selectColor(c) {
       selectedColor = c;
@@ -179,7 +201,7 @@
       document.getElementById('medName').value = '';
       document.getElementById('medDosage').value = '';
       document.getElementById('medFrequency').value = '';
-      document.getElementById('medInstructions').value = '';
+      handleFrequencyChange();
       document.getElementById('medStart').value = '';
       document.getElementById('medEnd').value = '';
       document.getElementById('modalTitle').textContent = 'Add Medicine';
@@ -195,7 +217,12 @@
       document.getElementById('medName').value = m.name;
       document.getElementById('medDosage').value = m.dosage || '';
       document.getElementById('medFrequency').value = m.frequency || '';
-      document.getElementById('medInstructions').value = m.instructions || '';
+      handleFrequencyChange();
+      const instInputs = document.querySelectorAll('.dynamic-inst');
+      const instParts = (m.instructions || '').split(' | ');
+      instInputs.forEach((inp, idx) => {
+        inp.value = instParts[idx] || (idx === 0 ? m.instructions : '');
+      });
       document.getElementById('medStart').value = m.start_date || '';
       document.getElementById('medEnd').value = m.end_date || '';
       document.getElementById('modalTitle').textContent = 'Edit Medicine';
@@ -212,11 +239,14 @@
       const name = document.getElementById('medName').value.trim();
       if (!name) { showToast('Medicine name is required', 'error'); return; }
 
+      const instInputs = document.querySelectorAll('.dynamic-inst');
+      const instructions = Array.from(instInputs).map(i => i.value.trim()).filter(Boolean).join(' | ');
+
       const data = {
         name,
         dosage: document.getElementById('medDosage').value.trim(),
         frequency: document.getElementById('medFrequency').value.trim(),
-        instructions: document.getElementById('medInstructions').value.trim(),
+        instructions: instructions,
         start_date: document.getElementById('medStart').value,
         end_date: document.getElementById('medEnd').value,
         color: selectedColor

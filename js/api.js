@@ -1,4 +1,4 @@
-const API_BASE = 'https://sevra-meds-reminder.onrender.com/api';
+const API_BASE = 'http://localhost:3000/api';
 
 function getToken() {
   return localStorage.getItem('mycare_token');
@@ -12,7 +12,7 @@ async function apiFetch(path, options = {}) {
   const res = await fetch(API_BASE + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
 
-  if (res.status === 401) {
+  if (res.status === 401 && !window.location.pathname.includes('login.html') && !window.location.pathname.includes('register.html')) {
     localStorage.removeItem('mycare_token');
     localStorage.removeItem('mycare_user');
     window.location.href = 'login.html';

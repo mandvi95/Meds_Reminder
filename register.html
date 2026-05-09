@@ -50,8 +50,8 @@
           <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
         </div>
         <div class="form-group">
-          <label for="phone">Phone Number <span style="color:var(--text-muted);font-weight:400;">(optional — for SMS/call reminders)</span></label>
-          <input type="tel" id="phone" placeholder="+91 98765 43210">
+          <label for="phone">Phone Number <span style="color:var(--text-muted);font-weight:400;">(for SMS/call reminders)</span></label>
+          <input type="tel" id="phone" placeholder="+91 98765 43210" required>
           <div class="phone-hint">Include country code for SMS & voice call reminders (e.g. +91 for India)</div>
         </div>
         <div class="form-group">
@@ -63,7 +63,18 @@
         </button>
       </form>
 
-      <div class="auth-footer">
+      <form id="otpForm" onsubmit="handleVerify(event)" style="display:none;">
+        <p style="color:var(--primary); font-weight: 600; margin-bottom: 16px; text-align: center;">An OTP has been sent to your email.</p>
+        <div class="form-group">
+          <label for="otp">Enter OTP</label>
+          <input type="text" id="otp" placeholder="123456" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="verifyBtn">
+          Verify & Sign In
+        </button>
+      </form>
+
+      <div class="auth-footer" id="authFooter">
         Already have an account? <a href="login.html">Sign in</a>
       </div>
     </div>
@@ -72,6 +83,8 @@
   <script src="js/api.js"></script>
   <script>
     redirectIfLoggedIn();
+
+    let registeredEmail = '';
 
     async function handleRegister(e) {
       e.preventDefault();
@@ -90,15 +103,45 @@
       const res = await api.post('/auth/register', { name, email, phone, password });
 
       if (res && res.ok) {
-        localStorage.setItem('mycare_token', res.data.token);
-        localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
-        showToast('Account created! Welcome to MyCare.', 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 800);
+        showToast('OTP sent to your email!', 'info');
+        if (res.data && res.data.mockOtp) {
+          setTimeout(() => alert('TEST MODE: Your OTP is ' + res.data.mockOtp), 500);
+        }
+        registeredEmail = email;
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('authFooter').style.display = 'none';
+        document.getElementById('otpForm').style.display = 'block';
       } else {
         errorBox.textContent = res?.data?.error || 'Registration failed. Please try again.';
         errorBox.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = 'Create Account';
+      }
+    }
+
+    async function handleVerify(e) {
+      e.preventDefault();
+      const btn = document.getElementById('verifyBtn');
+      const errorBox = document.getElementById('errorBox');
+      errorBox.style.display = 'none';
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div>';
+
+      const otp = document.getElementById('otp').value;
+
+      const res = await api.post('/auth/verify-otp', { email: registeredEmail, otp });
+
+      if (res && res.ok) {
+        localStorage.setItem('mycare_token', res.data.token);
+        localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
+        showToast('Account verified successfully!', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      } else {
+        errorBox.textContent = res?.data?.error || 'Verification failed. Invalid OTP.';
+        errorBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Verify & Sign In';
       }
     }
   </script>

@@ -60,9 +60,9 @@
             <option value="">Select medicine...</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="reminderTime">Reminder Time *</label>
-          <input type="time" id="reminderTime">
+        <div class="form-group" id="timeInputsContainer">
+          <label>Reminder Time *</label>
+          <input type="time" class="dynamic-time" style="margin-bottom:8px;">
         </div>
         <div class="form-group">
           <label>Days of Week</label>
@@ -182,6 +182,28 @@
       const sel = document.getElementById('medSelect');
       sel.innerHTML = '<option value="">Select medicine...</option>' +
         medicines.map(m => `<option value="${m.id}">${m.name}${m.dosage ? ' – ' + m.dosage : ''}</option>`).join('');
+      sel.onchange = () => {
+        if (!document.getElementById('editId').value) handleMedSelect();
+      };
+    }
+
+    function handleMedSelect() {
+      const medId = document.getElementById('medSelect').value;
+      const m = medicines.find(x => x.id == medId);
+      const container = document.getElementById('timeInputsContainer');
+      let count = 1;
+      if (m && m.frequency) {
+        if (m.frequency.includes('BID')) count = 2;
+        else if (m.frequency.includes('TID')) count = 3;
+        else if (m.frequency.includes('QID')) count = 4;
+      }
+      
+      let html = '<label>Reminder Times *</label>';
+      for (let i = 1; i <= count; i++) {
+        let label = count === 1 ? '' : `<div style="font-size:12px;margin-top:4px;color:var(--text-muted);">Time ${i}</div>`;
+        html += `${label}<input type="time" class="dynamic-time" style="margin-bottom:8px;">`;
+      }
+      container.innerHTML = html;
     }
 
     function formatTime12(t) {
@@ -278,7 +300,7 @@
     function openAddModal() {
       document.getElementById('editId').value = '';
       document.getElementById('medSelect').value = '';
-      document.getElementById('reminderTime').value = '';
+      document.getElementById('timeInputsContainer').innerHTML = '<label>Reminder Time *</label><input type="time" class="dynamic-time" style="margin-bottom:8px;">';
       document.querySelectorAll('.day-btn').forEach(b => b.classList.add('active'));
       selectNotifType('push');
       document.getElementById('modalTitle').textContent = 'Set Reminder';
@@ -293,7 +315,8 @@
       if (!r) return;
       document.getElementById('editId').value = id;
       document.getElementById('medSelect').value = r.medicine_id;
-      document.getElementById('reminderTime').value = r.time;
+      document.getElementById('timeInputsContainer').innerHTML = '<label>Reminder Time *</label><input type="time" class="dynamic-time" style="margin-bottom:8px;">';
+      document.querySelector('.dynamic-time').value = r.time;
       const days = r.days_of_week.split(',');
       document.querySelectorAll('.day-btn').forEach(b => {
         b.classList.toggle('active', days.includes(b.dataset.day));
@@ -310,37 +333,57 @@
 
     async function saveReminder() {
       const medId = document.getElementById('medSelect').value;
-      const time = document.getElementById('reminderTime').value;
       if (!medId) { showToast('Select a medicine', 'error'); return; }
-      if (!time) { showToast('Select a time', 'error'); return; }
+
+      const timeInputs = document.querySelectorAll('.dynamic-time');
+      const times = Array.from(timeInputs).map(i => i.value).filter(Boolean);
+      if (times.length === 0) { showToast('Select at least one time', 'error'); return; }
+
       const days = getSelectedDays();
       if (!days) { showToast('Select at least one day', 'error'); return; }
+
+      if (times.length > 1) {
+        for (let i = 1; i < times.length; i++) {
+          if (times[i] <= times[i-1]) {
+            showToast(`Time ${i+1} must be later than Time ${i}`, 'error');
+            return;
+          }
+        }
+      }
 
       const editId = document.getElementById('editId').value;
       const btn = document.getElementById('saveBtn');
       btn.disabled = true;
 
-      const data = { medicine_id: parseInt(medId), time, days_of_week: days, notification_type: selectedNotifType };
-      let res;
-      if (editId) {
-        res = await api.put(`/reminders/${editId}`, data);
-      } else {
-        res = await api.post('/reminders', data);
-      }
-
-      if (res?.ok) {
-        // Upload voice file if selected
-        if (selectedVoiceFile) {
-          const remId = editId || res.data.reminder.id;
-          const fd = new FormData();
-          fd.append('file', selectedVoiceFile);
-          await api.upload(`/reminders/${remId}/voice`, fd);
+      try {
+        if (editId) {
+          const data = { medicine_id: parseInt(medId), time: times[0], days_of_week: days, notification_type: selectedNotifType };
+          const res = await api.put(`/reminders/${editId}`, data);
+          if (!res?.ok) throw new Error(res?.data?.error || 'Failed to update reminder');
+          
+          if (selectedVoiceFile) {
+            const fd = new FormData();
+            fd.append('file', selectedVoiceFile);
+            await api.upload(`/reminders/${editId}/voice`, fd);
+          }
+        } else {
+          for (const t of times) {
+            const data = { medicine_id: parseInt(medId), time: t, days_of_week: days, notification_type: selectedNotifType };
+            const res = await api.post('/reminders', data);
+            if (!res?.ok) throw new Error(res?.data?.error || 'Failed to set reminder');
+            
+            if (selectedVoiceFile) {
+              const fd = new FormData();
+              fd.append('file', selectedVoiceFile);
+              await api.upload(`/reminders/${res.data.reminder.id}/voice`, fd);
+            }
+          }
         }
-        showToast(editId ? 'Reminder updated!' : 'Reminder set!', 'success');
+        showToast(editId ? 'Reminder updated!' : 'Reminders set!', 'success');
         closeModal();
         loadData();
-      } else {
-        showToast(res?.data?.error || 'Failed to save reminder', 'error');
+      } catch (err) {
+        showToast(err.message, 'error');
       }
       btn.disabled = false;
     }
