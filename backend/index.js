@@ -738,18 +738,18 @@ app.post('/api/ivr/voice', async (req, res) => {
     method: 'POST'
   });
 
-  gather.say({
+  gather.say(
+  {
     voice: 'Polly.Kajal-Neural',
     language: 'hi-IN'
-}, '<speak>' +
-    'नमस्ते, यह Dose Med है। आपकी दवा ' + reminder.medicine.name + ' लेने का समय हो गया है। ' +
-    'यह आपकी खुराक संख्या ' + dosageNumber + ' के लिए रिमाइंडर है। ' + instruction + '। ' +
-    '<break time="1s"/>' +
-    'अगर आपने दवा ले ली है, <break time="600ms"/> <emphasis level="strong">१ दबाएं</emphasis>। ' +
-    '५ मिनट बाद याद दिलाने के लिए, <break time="600ms"/> <emphasis level="strong">२ दबाएं</emphasis>। ' +
-    'आधे घंटे बाद याद दिलाने के लिए, <break time="600ms"/> <emphasis level="strong">३ दबाएं</emphasis>। ' +
-    'आज की खुराक छोड़ने के लिए, <break time="600ms"/> <emphasis level="strong">४ दबाएं</emphasis>।' +
-    '</speak>'
+  },
+  'नमस्ते, यह Dose Med है। आपकी दवा ' + reminder.medicine.name + ' लेने का समय हो गया है। ' +
+  'यह आपकी खुराक संख्या ' + dosageNumber + ' के लिए रिमाइंडर है। ' + instruction + '। ' +
+  '<break time="1s"/>' +
+  'अगर आपने दवा ले ली है, 1 दबाएं। ' +
+  '5 मिनट बाद याद दिलाने के लिए, 2 दबाएं। ' +
+  'आधे घंटे बाद याद दिलाने के लिए, 3 दबाएं। ' +
+  'आज की खुराक छोड़ने के लिए, 4 दबाएं।'
 );
 
   // If no input, loop back
