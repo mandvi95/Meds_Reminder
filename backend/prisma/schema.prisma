@@ -21,6 +21,10 @@ model User {
 
   medicines   Medicine[]
   reminders   Reminder[]
+  owned_family_links  FamilyMember[] @relation("OwnerFamily")
+  member_family_links FamilyMember[] @relation("MemberFamily")
+  activity_logs       ActivityLog[]  @relation("UserLogs")
+  family_activity_logs ActivityLog[] @relation("FamilyLogs")
 }
 
 model Medicine {
@@ -54,4 +58,29 @@ model Reminder {
 
   user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   medicine          Medicine @relation(fields: [medicine_id], references: [id], onDelete: Cascade)
+}
+
+model FamilyMember {
+  id           Int      @id @default(autoincrement())
+  owner_id     Int
+  member_id    Int
+  role         String   @default("member")
+  created_at   DateTime @default(now())
+
+  owner        User     @relation("OwnerFamily", fields: [owner_id], references: [id], onDelete: Cascade)
+  member       User     @relation("MemberFamily", fields: [member_id], references: [id], onDelete: Cascade)
+
+  @@unique([owner_id, member_id])
+}
+
+model ActivityLog {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  family_member_id Int?     // If action was taken by a family member
+  action           String   // e.g., "Added Medicine", "Skipped Reminder"
+  details          String   // e.g., "Medicine Name: Aspirin"
+  created_at       DateTime @default(now())
+
+  user             User     @relation("UserLogs", fields: [user_id], references: [id], onDelete: Cascade)
+  family_member    User?    @relation("FamilyLogs", fields: [family_member_id], references: [id], onDelete: Cascade)
 }

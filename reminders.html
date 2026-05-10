@@ -283,16 +283,16 @@
     }
 
     async function loadLogs() {
-      const res = await api.get('/reminders/logs');
+      const res = await api.get('/logs');
       const logs = res?.data?.logs || [];
       const el = document.getElementById('logList');
       if (!el) return;
       if (!logs.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No activity yet.</div>'; return; }
       el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` + logs.slice(0,10).map(l => `
         <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
-          <span class="badge ${l.status === 'sent' ? 'badge-green' : 'badge-red'}">${l.status}</span>
-          <span>${l.channel || '—'}</span>
-          <span style="color:var(--text-muted);">${new Date(l.triggered_at).toLocaleString('en-IN')}</span>
+          <span class="badge badge-blue">${l.action}</span>
+          <span>${l.actor_name || 'Owner'}</span>
+          <span style="color:var(--text-muted);">${new Date(l.created_at).toLocaleString('en-IN')}</span>
         </div>
       `).join('') + '</div>';
     }
@@ -362,9 +362,7 @@
           if (!res?.ok) throw new Error(res?.data?.error || 'Failed to update reminder');
           
           if (selectedVoiceFile) {
-            const fd = new FormData();
-            fd.append('file', selectedVoiceFile);
-            await api.upload(`/reminders/${editId}/voice`, fd);
+            showToast('Voice upload is not enabled in this backend yet.', 'warning');
           }
         } else {
           for (const t of times) {
@@ -373,9 +371,7 @@
             if (!res?.ok) throw new Error(res?.data?.error || 'Failed to set reminder');
             
             if (selectedVoiceFile) {
-              const fd = new FormData();
-              fd.append('file', selectedVoiceFile);
-              await api.upload(`/reminders/${res.data.reminder.id}/voice`, fd);
+              showToast('Voice upload is not enabled in this backend yet.', 'warning');
             }
           }
         }

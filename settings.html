@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings – MyCare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .settings-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app-layout" id="app-layout"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    buildLayout('settings', 'Settings', 'Manage profile and account security');
+
+    function renderSettings() {
+      const user = getCurrentUser() || {};
+      document.getElementById('pageBody').innerHTML = `
+        <div class="settings-grid">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Profile</div>
+                <div class="card-subtitle">Update your personal details</div>
+              </div>
+            </div>
+            <form onsubmit="updateProfile(event)">
+              <div class="form-group">
+                <label for="name">Full name</label>
+                <input id="name" value="${(user.name || '').replace(/"/g, '&quot;')}" required>
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone number</label>
+                <input id="phone" value="${(user.phone || '').replace(/"/g, '&quot;')}" placeholder="+91XXXXXXXXXX">
+              </div>
+              <button class="btn btn-primary" id="profileBtn" type="submit">Save Profile</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Change Password</div>
+                <div class="card-subtitle">Use your current password to set a new one</div>
+              </div>
+            </div>
+            <form onsubmit="updatePassword(event)">
+              <div class="form-group">
+                <label for="currentPassword">Current password</label>
+                <input id="currentPassword" type="password" required>
+              </div>
+              <div class="form-group">
+                <label for="newPassword">New password</label>
+                <input id="newPassword" type="password" minlength="6" required>
+              </div>
+              <button class="btn btn-primary" id="passwordBtn" type="submit">Update Password</button>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    async function updateProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('profileBtn');
+      btn.disabled = true;
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim()
+      };
+      const res = await api.put('/auth/me', payload);
+      btn.disabled = false;
+      if (!res?.ok) return showToast(res?.data?.error || 'Profile update failed', 'error');
+      localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
+      showToast('Profile updated', 'success');
+      renderSettings();
+    }
+
+    async function updatePassword(e) {
+      e.preventDefault();
+      const btn = document.getElementById('passwordBtn');
+      btn.disabled = true;
+      const payload = {
+        currentPassword: document.getElementById('currentPassword').value,
+        newPassword: document.getElementById('newPassword').value
+      };
+      const res = await api.put('/auth/me', payload);
+      btn.disabled = false;
+      if (!res?.ok) return showToast(res?.data?.error || 'Password update failed', 'error');
+      showToast('Password updated successfully', 'success');
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+    }
+
+    renderSettings();
+  </script>
+</body>
+</html>
