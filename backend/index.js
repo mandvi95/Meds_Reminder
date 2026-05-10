@@ -743,8 +743,8 @@ app.post('/api/ivr/voice', async (req, res) => {
     voice: 'Polly.Kajal-Neural',
     language: 'hi-IN'
   },
-  'नमस्ते, यह Dose Med है। आपकी दवा ' + reminder.medicine.name + ' लेने का समय हो गया है। ' +
-  'यह आपकी खुराक संख्या ' + dosageNumber + ' के लिए रिमाइंडर है। ' + instruction + '। ' +
+  'नमस्ते, यह Dose Med है। आपकी दवा... ' + reminder.medicine.name + ' लेने का समय हो गया है। ' +
+  'यह आपकी खुराक संख्या... ' + dosageNumber + ' के लिए रिमाइंडर है। ..' + instruction + '।..' +
   'अगर आपने दवा ले ली है... तो १ दबाएं। ' +
   '५ मिनट बाद याद दिलाने के लिए... २ दबाएं। ' +
   'आधे घंटे बाद याद दिलाने के लिए... ३ दबाएं। ' +
