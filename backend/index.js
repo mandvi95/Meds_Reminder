@@ -745,11 +745,10 @@ app.post('/api/ivr/voice', async (req, res) => {
   },
   'नमस्ते, यह Dose Med है। आपकी दवा ' + reminder.medicine.name + ' लेने का समय हो गया है। ' +
   'यह आपकी खुराक संख्या ' + dosageNumber + ' के लिए रिमाइंडर है। ' + instruction + '। ' +
-  '<break time="1s"/>' +
-  'अगर आपने दवा ले ली है, 1 दबाएं। ' +
-  '5 मिनट बाद याद दिलाने के लिए, 2 दबाएं। ' +
-  'आधे घंटे बाद याद दिलाने के लिए, 3 दबाएं। ' +
-  'आज की खुराक छोड़ने के लिए, 4 दबाएं।'
+  'अगर आपने दवा ले ली है... तो १ दबाएं। ' +
+  '५ मिनट बाद याद दिलाने के लिए... २ दबाएं। ' +
+  'आधे घंटे बाद याद दिलाने के लिए... ३ दबाएं। ' +
+  'आज की खुराक छोड़ने के लिए... ४ दबाएं।'
 );
 
   // If no input, loop back
@@ -764,56 +763,64 @@ app.post('/api/ivr/response', async (req, res) => {
 
   const twiml = new twilio.twiml.VoiceResponse();
 
+  const HINDI_VOICE = {
+    voice: 'Polly.Kajal-Neural',
+    language: 'hi-IN'
+  };
+
   try {
     const reminder = await prisma.reminder.findUnique({ where: { id: parseInt(ReminderId) } });
     if (!reminder) throw new Error('Reminder not found');
 
     if (Digits === '1') {
-      // Taken
-      await prisma.reminder.update({
-        where: { id: reminder.id },
-        data: {
-          call_status: 'taken',
-          next_call_at: calculateNextCall(reminder.time, reminder.days_of_week)
-        }
-      });
-      twiml.say('Great! Your medicine has been marked as taken. Goodbye!');
-    } else if (Digits === '2') {
-      // Snooze 5 mins
-      await prisma.reminder.update({
-        where: { id: reminder.id },
-        data: {
-          call_status: 'pending',
-          next_call_at: moment().add(5, 'minutes').toDate()
-        }
-      });
-      twiml.say('Got it. I will remind you again in 5 minutes. Goodbye!');
-    } else if (Digits === '3') {
-      // Snooze 30 mins
-      await prisma.reminder.update({
-        where: { id: reminder.id },
-        data: {
-          call_status: 'pending',
-          next_call_at: moment().add(30, 'minutes').toDate()
-        }
-      });
-      twiml.say('Got it. I will remind you again in 30 minutes. Goodbye!');
-    } else if (Digits === '4') {
-      // Skipped
-      await prisma.reminder.update({
-        where: { id: reminder.id },
-        data: {
-          call_status: 'skipped',
-          next_call_at: calculateNextCall(reminder.time, reminder.days_of_week)
-        }
-      });
-      twiml.say('Your medicine has been skipped for today. Goodbye!');
-    } else {
-      // Invalid input
-      twiml.say('Invalid option selected.');
-      twiml.redirect(BASE_URL + '/api/ivr/voice?ReminderId=' + ReminderId);
-      return res.type('text/xml').send(twiml.toString());
+  await prisma.reminder.update({
+    where: { id: reminder.id },
+    data: {
+      call_status: 'taken',
+      next_call_at: calculateNextCall(reminder.time, reminder.days_of_week)
     }
+  });
+
+  twiml.say(HINDI_VOICE, 'बहुत अच्छा। आपकी दवा ली हुई मार्क कर दी गई है। धन्यवाद।');
+
+} else if (Digits === '2') {
+  await prisma.reminder.update({
+    where: { id: reminder.id },
+    data: {
+      call_status: 'pending',
+      next_call_at: moment().add(5, 'minutes').toDate()
+    }
+  });
+
+  twiml.say(HINDI_VOICE, 'ठीक है। मैं आपको 5 मिनट बाद फिर याद दिलाऊंगी। धन्यवाद।');
+
+} else if (Digits === '3') {
+  await prisma.reminder.update({
+    where: { id: reminder.id },
+    data: {
+      call_status: 'pending',
+      next_call_at: moment().add(30, 'minutes').toDate()
+    }
+  });
+
+  twiml.say(HINDI_VOICE, 'ठीक है। मैं आपको 30 मिनट बाद फिर याद दिलाऊंगी। धन्यवाद।');
+
+} else if (Digits === '4') {
+  await prisma.reminder.update({
+    where: { id: reminder.id },
+    data: {
+      call_status: 'skipped',
+      next_call_at: calculateNextCall(reminder.time, reminder.days_of_week)
+    }
+  });
+
+  twiml.say(HINDI_VOICE, 'आज की खुराक छोड़ दी गई है। धन्यवाद।');
+
+} else {
+  twiml.say(HINDI_VOICE, 'गलत विकल्प चुना गया है। कृपया फिर से कोशिश करें।');
+  twiml.redirect(BASE_URL + '/api/ivr/voice?ReminderId=' + ReminderId);
+  return res.type('text/xml').send(twiml.toString());
+}
   } catch (err) {
     console.error('[IVR Response Error]', err);
     twiml.say('An error occurred. Goodbye.');
