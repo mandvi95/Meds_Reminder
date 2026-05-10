@@ -107,11 +107,12 @@ async function createActivityLog({ ownerUserId, actorUserId, action, details }) 
 function calculateNextCall(timeStr, daysOfWeekStr) {
   // timeStr: "14:00"
   // daysOfWeekStr: "1,2,3,4,5,6,7" (1=Mon, 7=Sun)
-  // For simplicity, we just schedule it for the next occurrence of that time today or tomorrow.
-  const now = moment();
+  // We schedule it for the next occurrence of that time today or tomorrow in IST.
+  const timezone = 'Asia/Kolkata';
+  const now = moment().tz(timezone);
   const [hour, minute] = timeStr.split(':').map(Number);
   
-  let next = moment().set({ hour, minute, second: 0, millisecond: 0 });
+  let next = moment().tz(timezone).set({ hour, minute, second: 0, millisecond: 0 });
   if (next.isBefore(now)) {
     next.add(1, 'days');
   }
@@ -832,7 +833,8 @@ app.post('/api/ivr/response', async (req, res) => {
 // ─── CRON SCHEDULER ───
 // Runs every minute
 cron.schedule('* * * * *', async () => {
-  console.log('[CRON] Checking for pending reminders...', new Date().toISOString());
+  const nowIST = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+  console.log(`[CRON] Checking for pending reminders... ${nowIST} IST`);
   try {
     const now = new Date();
     // Find reminders where next_call_at is in the past, and status is still pending
