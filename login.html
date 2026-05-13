@@ -113,8 +113,8 @@
       const res = await api.post('/auth/login', { email, password });
 
       if (res && res.ok) {
-        localStorage.setItem('Mycare_token', res.data.token);
-        localStorage.setItem('Mycare_user', JSON.stringify(res.data.user));
+        localStorage.setItem('mycare_token', res.data.token);
+        localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
         window.location.href = 'dashboard.html';
       } else {
         let errorMsg = res?.data?.error;
