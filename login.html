@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In – DoseMed</title>
+  <title>Sign In – Mycare</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
   <style>
@@ -67,7 +67,7 @@
 
     <div class="auth-card">
       <h1>Welcome back</h1>
-      <p>Sign in to your DoseMed account</p>
+      <p>Sign in to your Mycare account</p>
 
       <div class="error-box" id="errorBox"></div>
 
@@ -113,8 +113,8 @@
       const res = await api.post('/auth/login', { email, password });
 
       if (res && res.ok) {
-        localStorage.setItem('DoseMed_token', res.data.token);
-        localStorage.setItem('DoseMed_user', JSON.stringify(res.data.user));
+        localStorage.setItem('Mycare_token', res.data.token);
+        localStorage.setItem('Mycare_user', JSON.stringify(res.data.user));
         window.location.href = 'dashboard.html';
       } else {
         let errorMsg = res?.data?.error;
