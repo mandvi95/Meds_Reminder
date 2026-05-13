@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Account – MyCare</title>
+  <title>Create Account – DoseMed</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
   <style>
@@ -36,7 +36,7 @@
 
     <div class="auth-card">
       <h1>Create your account</h1>
-      <p>Start managing your health with MyCare today</p>
+      <p>Start managing your health with DoseMed today</p>
 
       <div class="error-box" id="errorBox"></div>
 
@@ -133,8 +133,8 @@
       const res = await api.post('/auth/verify-otp', { email: registeredEmail, otp });
 
       if (res && res.ok) {
-        localStorage.setItem('mycare_token', res.data.token);
-        localStorage.setItem('mycare_user', JSON.stringify(res.data.user));
+        localStorage.setItem('DoseMed_token', res.data.token);
+        localStorage.setItem('DoseMed_user', JSON.stringify(res.data.user));
         showToast('Account verified successfully!', 'success');
         setTimeout(() => window.location.href = 'dashboard.html', 800);
       } else {
