@@ -230,20 +230,61 @@
     <!-- Hero -->
     <div class="hero-content">
       <div class="hero-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Diya Lamp Base -->
-  <path d="M2 12C2 17 6 20 12 20C18 20 22 17 22 12H2Z" fill="currentColor" opacity="0.2"/>
-  <path d="M2 12C2 17 6 20 12 20C18 20 22 17 22 12Z"/>
-  <line x1="2" y1="12" x2="22" y2="12"/>
+        <svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    /* Blinkit-style micro-animations */
+    .flame {
+      transform-origin: 12px 10px;
+      animation: flicker 1.5s ease-in-out infinite alternate;
+    }
+    .ray-top {
+      transform-origin: 12px 0px;
+      animation: pulse-ray 1.5s ease-in-out infinite;
+    }
+    .ray-left {
+      transform-origin: 7px 3px;
+      animation: pulse-ray 1.5s ease-in-out infinite 0.3s;
+    }
+    .ray-right {
+      transform-origin: 17px 3px;
+      animation: pulse-ray 1.5s ease-in-out infinite 0.6s;
+    }
+    .diya-base {
+      transform-origin: 12px 16px;
+      animation: gentle-sway 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% { transform: scale(0.9) rotate(-2deg); opacity: 0.8; }
+      50% { transform: scale(1.05) rotate(3deg); opacity: 1; }
+      100% { transform: scale(0.95) rotate(-1deg); opacity: 0.9; }
+    }
+    @keyframes pulse-ray {
+      0%, 100% { transform: scale(0.6); opacity: 0.3; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+    @keyframes gentle-sway {
+      0% { transform: translateY(0) rotate(0.5deg); }
+      100% { transform: translateY(-0.5px) rotate(-0.5deg); }
+    }
+  </style>
+
+  <g class="diya-base">
+    <!-- Diya Lamp Base -->
+    <path d="M2 12C2 17 6 20 12 20C18 20 22 17 22 12H2Z" fill="currentColor" opacity="0.15"/>
+    <path d="M2 12C2 17 6 20 12 20C18 20 22 17 22 12Z"/>
+    <line x1="2" y1="12" x2="22" y2="12"/>
+  </g>
   
   <!-- Diya Flame -->
-  <path d="M12 2C10 5 10 8 12 10C14 8 14 5 12 2Z" fill="currentColor"/>
+  <path class="flame" d="M12 2C10 5 10 8 12 10C14 8 14 5 12 2Z" fill="currentColor"/>
   
   <!-- Light Rays / Sparkles -->
-  <line x1="12" y1="0" x2="12" y2="1"/>
-  <line x1="7" y1="3" x2="8" y2="4"/>
-  <line x1="17" y1="3" x2="16" y2="4"/>
+  <line class="ray-top" x1="12" y1="0" x2="12" y2="1"/>
+  <line class="ray-left" x1="7" y1="3" x2="8" y2="4"/>
+  <line class="ray-right" x1="17" y1="3" x2="16" y2="4"/>
 </svg>
+
         Happy Diwali
       </div>
       <h1>Your Health,<br><span>Our Priority</span></h1>
